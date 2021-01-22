@@ -1,0 +1,13 @@
+.autocomplete-dropdown > div{
+   border-bottom:1px solid #eaeaea;
+}
+
+.autocomplete-dropdown > div:last-child{
+    border-bottom: none;
+}
+
+.autocomplete-dropdown > div > a{
+    width:100%!important;
+    height:100%;
+    display:block;
+}
