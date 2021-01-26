@@ -4,7 +4,6 @@ import { Col, Container, Row } from "react-bootstrap";
 function Home() {
   const [cities, setCities] = useState([]);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(-1);
   useEffect(() => {
     // Don't fire an API call if there's less than 3 characters because of the rate limits
     if (query.length > 2) {
@@ -25,7 +24,7 @@ function Home() {
                 data.location_suggestions.map((city, index) => {
                   return (
                     <div key={index} className="w-100 py-3 px-2">
-                      <a href={'/restaurants/'+city.id} onClick={setSelected(city.id)}>
+                      <a href={'/restaurants/'+city.id}>
                         {city.name}
                       </a>
                     </div>
