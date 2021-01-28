@@ -1,46 +1,47 @@
 import { useEffect, useState } from "react";
 import { Container, Row, Col, Pagination } from "react-bootstrap";
 import { useParams } from "react-router-dom";
-import { zomatoApiKey } from "./APIKeys.js";
+import { zomatoApiKey, geocodingApiKey } from "./APIKeys.js";
 import Slider from "@material-ui/core/Slider";
 import { mdiClose, mdiCheck } from "@mdi/js";
 import Icon from "@mdi/react";
 
 function Restaurants() {
-  let { cityId } = useParams();
+  let { cityId, lat, lon } = useParams();
   // Hardcoded, can be replaced with an API call
-  const categories = [
-    { id: 2, name: "Dining" },
-    { id: 5, name: "Takeaway" },
-    { id: 1, name: "Delivery" },
-    { id: 11, name: "Pubs & Bars" },
-  ];
-  const cuisines = [
-    { id: 1039, name: "Cafe Food" },
-    { id: 3, name: "Asian" },
-    { id: 25, name: "Chinese" },
-    { id: 161, name: "Coffee and Tea" },
-    { id: 5, name: "Bakery" },
-    { id: 983, name: "Pub Food" },
-    { id: 82, name: "Pizza" },
-    { id: 55, name: "Italian" },
-    { id: -1, name: "Other" },
-    { id: 40, name: "Fast Food" },
-    { id: 304, name: "Sandwich" },
-  ];
+  const [categories, setCategories] = useState([
+    { id: 2, value: "Dining", isChecked: false },
+    { id: 5, value: "Takeaway", isChecked: false },
+    { id: 1, value: "Delivery", isChecked: false },
+    { id: 11, value: "Pubs & Bars", isChecked: false },
+  ]);
+  const [cuisines, setCuisines] = useState([
+    { id: 1039, value: "Cafe Food", isChecked: false },
+    { id: 3, value: "Asian", isChecked: false },
+    { id: 25, value: "Chinese", isChecked: false },
+    { id: 161, value: "Coffee and Tea", isChecked: false },
+    { id: 5, value: "Bakery", isChecked: false },
+    { id: 983, value: "Pub Food", isChecked: false },
+    { id: 82, value: "Pizza", isChecked: false },
+    { id: 55, value: "Italian", isChecked: false },
+    { id: -1, value: "Other", isChecked: false },
+    { id: 40, value: "Fast Food", isChecked: false },
+    { id: 304, value: "Sandwich", isChecked: false },
+  ]);
   const [restaurants, setRestaurants] = useState([]);
   const [ratingRange, setRatingRange] = useState([1, 5]);
   const [priceRange, setPriceRange] = useState([1, 4]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(-1);
   const [restaurantObject, setRestaurantObject] = useState({});
-  const [categoriesFilter, setCategoriesFilter] = useState([]);
+  const [categoriesFilter, setCategoriesFilter] = useState(0);
   const [cuisinesFilter, setCuisinesFilter] = useState([]);
   const [restaurantsList, setRestaurantsList] = useState([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
 
   useEffect(() => {
     if (selectedRestaurant !== -1) {
       setRestaurantObject(
-        restaurants.find(
+        restaurantsList.find(
           (restaurant) => restaurant.restaurant.id === selectedRestaurant
         ).restaurant
       );
@@ -60,70 +61,138 @@ function Restaurants() {
     setPriceRange(newPriceRange);
   };
 
+  const handleCategoryCheck = (event) => {
+    var localCategories = categories;
+    localCategories.forEach((category) => {
+      if (category.value === event.target.value)
+      //   // console.log(event.target.value, event.target.checked)
+        category.isChecked = event.target.checked;
+      
+    });
+    
+    console.log(localCategories);
+
+    setCategories(Array.from(localCategories));
+    console.log("HERE",categories);
+  };
+
   useEffect(() => {
-    console.log("GOT HERE")
     var tempRestaurants = [];
-    // for (var i = 0 ; i <=80  ; i += 20) {
-    //   fetch(
-    //     "https://developers.zomato.com/api/v2.1/search?entity_id=" +
-    //       cityId +
-    //       "&entity_type=city&start="+i+
-    //       "&count=20",
-    //     {
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //         "user-key": zomatoApiKey,
-    //       },
-    //     }
-    //   )
-    //     .then((response) => response.json())
-    //     .then((data) => {
-    //       setRestaurants(data.restaurants);
-    //       tempRestaurants.push(data.restaurants);
-    //     })
-    // }
-    Promise.all([0,20,40,60,80].map(start=>{
-      fetch("https://developers.zomato.com/api/v2.1/search?entity_id=" + cityId + "&entity_type=city&start=" + start + "&count=20",
+    Promise.all(
+      [0, 20, 40, 60, 80].map((start) => {
+        fetch(
+          "https://developers.zomato.com/api/v2.1/search?entity_id=" +
+            cityId +
+            "&entity_type=city&start=" +
+            start +
+            "&count=20&lat=" +
+            lat +
+            "&lon=" +
+            lon +
+            "&sort=real_distance",
           {
             headers: {
               "Content-Type": "application/json",
               "user-key": zomatoApiKey,
-            }
+            },
           }
-        ).then(response => response.json())
-        .then((data) => {
-          data.restaurants.forEach(restaurant=>tempRestaurants.push(restaurant))
-        })
-    })).then(()=>setRestaurantsList(tempRestaurants));
-    // console.log(tempRestaurants);
-    // setRestaurants(tempRestaurants);
-
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            data.restaurants.forEach((restaurant) =>
+              tempRestaurants.push(restaurant)
+            );
+            if (tempRestaurants.length == 100) {
+              setFilteredRestaurants(tempRestaurants);
+              setRestaurantsList(tempRestaurants);
+            }
+          });
+      })
+    );
   }, [cityId]);
 
   useEffect(() => {
-    setRestaurants(restaurantsList.length > 0 ? restaurants.map((restaurant) => {
+    setRestaurants(
+      filteredRestaurants.length > 0 ? (
+        filteredRestaurants.map((restaurant) => {
+          return (
+            <>
+              <li
+                className="px-5 py-3"
+                id={"restaurant-" + restaurant.restaurant.id}
+                key={restaurant.restaurant.id}
+              >
+                <a
+                  href="#!"
+                  className="w-100 d-block"
+                  style={{ height: 100 + "%" }}
+                  onClick={() =>
+                    setSelectedRestaurant(restaurant.restaurant.id)
+                  }
+                >
+                  {restaurant.restaurant.name}
+                </a>
+              </li>
+            </>
+          );
+        })
+      ) : restaurantsList.length > 0 ? (
+        <li className="px-5 py-3">No results found.</li>
+      ) : (
+        <li className="px-5 py-3">Loading..</li>
+      )
+    );
+  }, [restaurantsList, filteredRestaurants]);
+
+  function diningFilter(restaurant) {
+    if (!categories[0].isChecked) return true;
+    return restaurant.restaurant.highlights.includes("Indoor Seating");
+  }
+
+  function takeawayFilter(restaurant) {
+    if (!categories[1].isChecked) return true;
+    return restaurant.restaurant.highlights.includes("Takeaway Available");
+  }
+
+  function deliveryFilter(restaurant) {
+    if (!categories[2].isChecked) return true;
+    return restaurant.restaurant.has_online_delivery;
+  }
+
+  function pubsAndCafeFilter(restaurant) {
+    if (!categories[3].isChecked) return true;
+    return (
+      restaurant.restaurant.establishment[0] == "Bar" ||
+      restaurant.restaurant.establishment[0] == "Pub"
+    );
+  }
+
+  useEffect(() => {
+    var localFiltered = [];
+    localFiltered = restaurantsList.filter((restaurant) => {
       return (
-        <>
-          <li
-            className="px-5 py-3"
-            id={"restaurant-" + restaurant.restaurant.id}
-            key={restaurant.restaurant.id}
-          >
-            <a
-              href="#!"
-              className="w-100 d-block"
-              style={{ height: 100 + "%" }}
-              onClick={() =>
-                setSelectedRestaurant(restaurant.restaurant.id)
-              }
-            >
-              {restaurant.restaurant.name}
-            </a>
-          </li>
-        </>
+        restaurant.restaurant.user_rating.aggregate_rating >= ratingRange[0] &&
+        restaurant.restaurant.user_rating.aggregate_rating <= ratingRange[1] &&
+        restaurant.restaurant.price_range >= priceRange[0] &&
+        restaurant.restaurant.price_range <= priceRange[1]
       );
-    }):<>Loading</>)
-  },[restaurantsList])
+    });
+    console.log(localFiltered.length);
+    // alert("HERE");
+    // for (var i = 0; i < localFiltered.length; i++) {
+    //   if (i >= 100) break;
+    //   console.log(i);
+    //   if (diningFilter(localFiltered[i])) localFiltered.push(localFiltered[i]);
+    //   if (takeawayFilter(localFiltered[i]))
+    //     localFiltered.push(localFiltered[i]);
+    //   if (deliveryFilter(localFiltered[i]))
+    //     localFiltered.push(localFiltered[i]);
+    //   if (pubsAndCafeFilter(localFiltered[i]))
+    //     localFiltered.push(localFiltered[i]);
+    // }
+    setFilteredRestaurants(Array.from(localFiltered));
+    return null;
+  }, [ratingRange, priceRange, categories]);
 
   return (
     <Container fluid className="px-0">
@@ -135,33 +204,6 @@ function Restaurants() {
         <Col md="3" className="results-container px-0">
           <ul className="results-list px-0">
             <li className="px-5 py-3">Results</li>
-
-            {/* {restaurants.length > 0 ? (
-              restaurants.map((restaurant) => {
-                return (
-                  <>
-                    <li
-                      className="px-5 py-3"
-                      id={"restaurant-" + restaurant.restaurant.id}
-                      key={restaurant.restaurant.id}
-                    >
-                      <a
-                        href="#!"
-                        className="w-100 d-block"
-                        style={{ height: 100 + "%" }}
-                        onClick={() =>
-                          setSelectedRestaurant(restaurant.restaurant.id)
-                        }
-                      >
-                        {restaurant.restaurant.name}
-                      </a>
-                    </li>
-                  </>
-                );
-              })
-            ) : (
-              <></>
-            )} */}
             {restaurants}
           </ul>
         </Col>
@@ -243,15 +285,25 @@ function Restaurants() {
                   >
                     <input
                       type="checkbox"
+                      id={"category-" + category.id}
+                      defaultChecked={category.isChecked}
+                      value={category.value}
+                      onChange={handleCategoryCheck}
+                    /> {category.value}
+                    {/* <input
+                      type="checkbox"
                       className="custom-control-input"
                       id={"category-" + category.id}
-                    />
-                    <label
+                      defaultChecked={category.isChecked}
+                      value={category.value}
+                      onChange={handleCategoryCheck}
+                    /> */}
+                    {/* <label
                       className="custom-control-label"
                       htmlFor={"category-" + category.id}
-                    >
-                      {category.name}
-                    </label>
+                    > */}
+                      {/* {category.value} */}
+                    {/* </label> */}
                   </div>
                 );
               })}
@@ -279,7 +331,7 @@ function Restaurants() {
                           className="custom-control-label"
                           htmlFor={"cuisine-" + cuisine.id}
                         >
-                          {cuisine.name}
+                          {cuisine.value}
                         </label>
                       </div>
                     </Col>

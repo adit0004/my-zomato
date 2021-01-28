@@ -7,7 +7,7 @@ function Home() {
   useEffect(() => {
     // Don't fire an API call if there's less than 3 characters because of the rate limits
     if (query.length > 2) {
-      fetch("https://developers.zomato.com/api/v2.1/cities?q=" + query, {
+      fetch("https://developers.zomato.com/api/v2.1/locations?query=" + query + "&count=7", {
         headers: {
           "Content-Type": "application/json",
           "user-key": "2a462fea81d31f52adc9f40f73c7668a",
@@ -24,8 +24,8 @@ function Home() {
                 data.location_suggestions.map((city, index) => {
                   return (
                     <div key={index} className="w-100 py-3 px-2">
-                      <a href={'/restaurants/'+city.id}>
-                        {city.name}
+                      <a href={'/restaurants/'+city.city_id+'/'+city.latitude+'/'+city.longitude}>
+                        {city.title}
                       </a>
                     </div>
                   );

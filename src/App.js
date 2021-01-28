@@ -14,7 +14,7 @@ function App() {
     <>
       <Router>
         <Switch>
-          <Route path="/restaurants/:cityId">
+          <Route path="/restaurants/:cityId/:lat/:lon">
             <Restaurants />
           </Route>
           <Route exact path="/">
