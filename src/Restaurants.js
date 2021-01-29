@@ -8,6 +8,11 @@ import Icon from "@mdi/react";
 
 function Restaurants() {
   let { cityId, lat, lon } = useParams();
+  
+
+  /**
+   * Component States
+   */
   // Hardcoded, can be replaced with an API call
   const [categories, setCategories] = useState([
     { id: 2, value: "Dining", isChecked: false },
@@ -15,6 +20,7 @@ function Restaurants() {
     { id: 1, value: "Delivery", isChecked: false },
     { id: 11, value: "Pubs & Bars", isChecked: false },
   ]);
+
   const [cuisines, setCuisines] = useState([
     { id: 1039, value: "Cafe Food", isChecked: false },
     { id: 3, value: "Asian", isChecked: false },
@@ -28,15 +34,106 @@ function Restaurants() {
     { id: 40, value: "Fast Food", isChecked: false },
     { id: 304, value: "Sandwich", isChecked: false },
   ]);
+  
   const [restaurants, setRestaurants] = useState([]);
   const [ratingRange, setRatingRange] = useState([1, 5]);
   const [priceRange, setPriceRange] = useState([1, 4]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(-1);
   const [restaurantObject, setRestaurantObject] = useState({});
-  const [categoriesFilter, setCategoriesFilter] = useState(0);
-  const [cuisinesFilter, setCuisinesFilter] = useState([]);
   const [restaurantsList, setRestaurantsList] = useState([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState([]);
+
+/**
+ * End component states
+ */
+
+
+ /**
+  * Helper Functions
+  */
+
+  const handleRatingChange = (event, newRatingRange) => {
+    setRatingRange(newRatingRange);
+  };
+
+  const handlePriceChange = (event, newPriceRange) => {
+    setPriceRange(newPriceRange);
+  };
+
+  const handleCategoryCheck = (event) => {
+    var localCategories = categories;
+    localCategories.forEach((category) => {
+      if (category.value === event.target.value)
+        category.isChecked = event.target.checked;
+    });
+
+    setCategories(Array.from(localCategories));
+  };
+
+  const handleCuisineCheck = (event) => {
+    var localCuisines = cuisines;
+    localCuisines.forEach((cuisine) => {
+      if (cuisine.value === event.target.value)
+        cuisine.isChecked = event.target.checked;
+    });
+
+    setCuisines(Array.from(localCuisines));
+  };
+
+
+  function diningFilter(restaurant) {
+    if (!categories[0].isChecked) return true;
+    return restaurant.restaurant.highlights.includes("Indoor Seating");
+  }
+
+  function takeawayFilter(restaurant) {
+    if (!categories[1].isChecked) return true;
+    return restaurant.restaurant.highlights.includes("Takeaway Available");
+  }
+
+  function deliveryFilter(restaurant) {
+    if (!categories[2].isChecked) return true;
+    return restaurant.restaurant.has_online_delivery;
+  }
+
+  function pubsAndCafeFilter(restaurant) {
+    if (!categories[3].isChecked) return true;
+    return (
+      restaurant.restaurant.establishment[0] == "Bar" ||
+      restaurant.restaurant.establishment[0] == "Pub"
+    );
+  }
+
+  function cuisineFilter(restaurant) {
+    var counter = 0;
+    var flag = false;
+    for (var i = 0 ; i < cuisines.length ; i++) {
+      // -1 is "Other"
+      if(cuisines[i].id != -1) {
+        if (cuisines[i].isChecked) {
+          counter++;
+        }
+        if(cuisines[i].isChecked && restaurant.restaurant.cuisines.indexOf(cuisines[i].value) != -1) {
+          flag = true;
+        }
+      }else if (cuisines[i].id == -1 && cuisines[i].isChecked) {
+        var localFlag = true;
+        for (var i = 0 ; i < cuisines.length ; i++) {
+          // -1 is "Other"
+          if(cuisines[i].id != -1) {
+            if(restaurant.restaurant.cuisines.indexOf(cuisines[i].value) != -1) localFlag = false;
+          }
+        }
+        flag = localFlag;
+      }
+    }
+    if(counter == 0) return true;
+    return flag;
+  }
+
+/**
+ * useEffect hooks
+ */
 
   useEffect(() => {
     if (selectedRestaurant !== -1) {
@@ -52,29 +149,6 @@ function Restaurants() {
         .classList.add("active");
     }
   }, [selectedRestaurant, restaurantObject]);
-
-  const handleRatingChange = (event, newRatingRange) => {
-    setRatingRange(newRatingRange);
-  };
-
-  const handlePriceChange = (event, newPriceRange) => {
-    setPriceRange(newPriceRange);
-  };
-
-  const handleCategoryCheck = (event) => {
-    var localCategories = categories;
-    localCategories.forEach((category) => {
-      if (category.value === event.target.value)
-      //   // console.log(event.target.value, event.target.checked)
-        category.isChecked = event.target.checked;
-      
-    });
-    
-    console.log(localCategories);
-
-    setCategories(Array.from(localCategories));
-    console.log("HERE",categories);
-  };
 
   useEffect(() => {
     var tempRestaurants = [];
@@ -144,29 +218,6 @@ function Restaurants() {
     );
   }, [restaurantsList, filteredRestaurants]);
 
-  function diningFilter(restaurant) {
-    if (!categories[0].isChecked) return true;
-    return restaurant.restaurant.highlights.includes("Indoor Seating");
-  }
-
-  function takeawayFilter(restaurant) {
-    if (!categories[1].isChecked) return true;
-    return restaurant.restaurant.highlights.includes("Takeaway Available");
-  }
-
-  function deliveryFilter(restaurant) {
-    if (!categories[2].isChecked) return true;
-    return restaurant.restaurant.has_online_delivery;
-  }
-
-  function pubsAndCafeFilter(restaurant) {
-    if (!categories[3].isChecked) return true;
-    return (
-      restaurant.restaurant.establishment[0] == "Bar" ||
-      restaurant.restaurant.establishment[0] == "Pub"
-    );
-  }
-
   useEffect(() => {
     var localFiltered = [];
     localFiltered = restaurantsList.filter((restaurant) => {
@@ -177,22 +228,21 @@ function Restaurants() {
         restaurant.restaurant.price_range <= priceRange[1]
       );
     });
-    console.log(localFiltered.length);
-    // alert("HERE");
-    // for (var i = 0; i < localFiltered.length; i++) {
-    //   if (i >= 100) break;
-    //   console.log(i);
-    //   if (diningFilter(localFiltered[i])) localFiltered.push(localFiltered[i]);
-    //   if (takeawayFilter(localFiltered[i]))
-    //     localFiltered.push(localFiltered[i]);
-    //   if (deliveryFilter(localFiltered[i]))
-    //     localFiltered.push(localFiltered[i]);
-    //   if (pubsAndCafeFilter(localFiltered[i]))
-    //     localFiltered.push(localFiltered[i]);
-    // }
-    setFilteredRestaurants(Array.from(localFiltered));
-    return null;
-  }, [ratingRange, priceRange, categories]);
+    var blankLocalFiltered = [];
+    for (var i = 0; i < localFiltered.length; i++) {
+      if (
+        diningFilter(localFiltered[i]) &&
+        takeawayFilter(localFiltered[i]) &&
+        deliveryFilter(localFiltered[i]) &&
+        pubsAndCafeFilter(localFiltered[i]) &&
+        cuisineFilter(localFiltered[i]) &&
+        !blankLocalFiltered.includes(localFiltered[i])
+      ) {
+        blankLocalFiltered.push(localFiltered[i]);
+      }
+    }
+    setFilteredRestaurants(Array.from(blankLocalFiltered));
+  }, [ratingRange, priceRange, categories, cuisines]);
 
   return (
     <Container fluid className="px-0">
@@ -221,7 +271,7 @@ function Restaurants() {
                 <Col xs="12" md="6">
                   <img
                     src={restaurantObject.featured_image}
-                    className="img-fluid"
+                    className="img-fluid restaurant-featured-image"
                   />
                 </Col>
                 <Col xs="12" md="6">
@@ -270,6 +320,10 @@ function Restaurants() {
     </Container>
   );
 
+
+  /**
+   * Component to display the filters row
+   */
   function Filters() {
     return (
       <Row className="px-5 py-3" style={{ height: 25 + "vh" }}>
@@ -285,25 +339,18 @@ function Restaurants() {
                   >
                     <input
                       type="checkbox"
-                      id={"category-" + category.id}
-                      defaultChecked={category.isChecked}
-                      value={category.value}
-                      onChange={handleCategoryCheck}
-                    /> {category.value}
-                    {/* <input
-                      type="checkbox"
                       className="custom-control-input"
                       id={"category-" + category.id}
                       defaultChecked={category.isChecked}
                       value={category.value}
                       onChange={handleCategoryCheck}
-                    /> */}
-                    {/* <label
+                    />
+                    <label
                       className="custom-control-label"
                       htmlFor={"category-" + category.id}
-                    > */}
-                      {/* {category.value} */}
-                    {/* </label> */}
+                    >
+                      {category.value}
+                    </label>
                   </div>
                 );
               })}
@@ -326,6 +373,9 @@ function Restaurants() {
                           type="checkbox"
                           className="custom-control-input"
                           id={"cuisine-" + cuisine.id}
+                          defaultChecked={cuisine.isChecked}
+                          value={cuisine.value}
+                          onChange={handleCuisineCheck}
                         />
                         <label
                           className="custom-control-label"
@@ -345,7 +395,6 @@ function Restaurants() {
                 className="mb-1 pt-1"
                 value={ratingRange}
                 onChange={handleRatingChange}
-                // valueLabelDisplay="auto"
                 marks={[
                   { value: 1 },
                   { value: 2 },
